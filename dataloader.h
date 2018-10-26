@@ -15,7 +15,7 @@ class Data {
   public: 
     Data(FILE* images, FILE* labels);
     ~Data();
-    void print();
+    void print(int index, float threshold);
 };
 
 #endif

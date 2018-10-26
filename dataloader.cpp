@@ -6,12 +6,11 @@ using namespace std;
 #include "./dataloader.h"
 
 unsigned int& endianSwap(unsigned int &x);
-void fillImageVectors(vector<int>* vector, FILE* images, int size);
-void fillLabelArray(int* array, FILE* labels, int size);
 
 Data::Data(FILE* images, FILE* labels) {
   unsigned int magic_number = 0, num_images = 0, num_labels = 0;
   unsigned int rows = 0, columns = 0;
+  unsigned char pixel_value, label;
 
   fread(&magic_number, sizeof(int), 1, images);
   endianSwap(magic_number);
@@ -38,11 +37,18 @@ Data::Data(FILE* images, FILE* labels) {
       imageVectors = new vector<int>[num_images];
       labelArray = new int[num_labels];
 
-      fillImageVectors(imageVectors, images, size);
-      fillLabelArray(labelArray, labels, size);
+      for (int i = 0; i < size; i++) {
+          for (int j = 0; j < (rows * columns); j++) {
+            fread(&pixel_value, sizeof(char), 1, images);
+            imageVectors[i].push_back((int)pixel_value);
+          }
+        fread(&label, sizeof(char), 1, labels);
+        labelArray[i] = (int)label;
+      }
+      cout << "-- Filled image vectors and label array ---" << endl;
 
   } else {
-    cout << "--- Load failed - every empty, all zero/NULL ---" << endl;
+    cout << "--- Load failed - arrays empty ---" << endl;
     size = 0;
     pixelRows = 0;
     pixelColumns = 0;
@@ -52,11 +58,22 @@ Data::Data(FILE* images, FILE* labels) {
 }
 
 Data::~Data() {
-  //delete the imageVector and labelArray
+  delete [] imageVectors;
+  delete [] labelArray;
 }
-void Data::print() {
-  cout << pixelRows << endl;
-  cout << pixelColumns << endl;
+
+// Prints the MNIST number at index, according to grayscale threshold
+void Data::print(int index, float threshold) {
+  int pixelCount = 0;
+
+  for (auto element: imageVectors[index]) {
+    if (pixelCount % 28 == 0) cout << endl;
+    if (element >= threshold) cout << "* ";
+    else cout << "0 ";
+    pixelCount++;
+  }
+
+  cout << endl;
 }
 
 unsigned int& endianSwap(unsigned int &x) {
@@ -64,26 +81,3 @@ unsigned int& endianSwap(unsigned int &x) {
   return x;
 }
 
-void fillImageVectors(vector<int>* vector, FILE* images, int size) {
-  unsigned char pixel_value;
-
-  for (int i = 0; i < size; i++) {
-    for (int j = 0; j < 784; j++) {
-      fread(&pixel_value, sizeof(char), 1, images);
-      vector[i].push_back((int)pixel_value);
-    }
-  }
-
-  cout << "-- Filled image vectors ---" << endl;
-}
-
-void fillLabelArray(int* array, FILE* labels, int size) {
-  unsigned char label;
-
-  for (int i = 0; i < size; i++) {
-    fread(&label, sizeof(char), 1, labels);
-    array[i] = (int)label;
-  }
-
-  cout << "-- Filled labels array ---" << endl;
-}
